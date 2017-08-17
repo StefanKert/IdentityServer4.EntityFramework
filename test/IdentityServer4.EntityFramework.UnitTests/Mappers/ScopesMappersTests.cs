@@ -25,7 +25,7 @@ namespace IdentityServer4.EntityFramework.UnitTests.Mappers
         [Fact]
         public void ApiResourceAutomapperConfigurationIsValid()
         {
-            var model = new ApiResource();
+            var model = new ApiResource("DummyApiResource");
             var mappedEntity = model.ToEntity();
             var mappedModel = mappedEntity.ToModel();
 
