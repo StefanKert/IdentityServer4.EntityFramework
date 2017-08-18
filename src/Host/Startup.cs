@@ -2,22 +2,20 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
-using System.Linq;
-using System.Reflection;
 using Host.Configuration;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using Microsoft.IdentityModel.Tokens;
+using IdentityServer4;
+using IdentityServer4.Validation;
+using Microsoft.AspNetCore.Http;
+using IdentityServer4.Quickstart.UI;
+using Microsoft.EntityFrameworkCore;
+using System.Reflection;
+using System.Linq;
 using IdentityServer4.EntityFramework.DbContexts;
 using IdentityServer4.EntityFramework.Mappers;
-using IdentityServer4.EntityFramework.Options;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Serilog;
-using IdentityServer4.Validation;
-using IdentityServer4.Quickstart.UI;
-using System;
-using Serilog.Events;
 
 namespace Host
 {
@@ -26,7 +24,7 @@ namespace Host
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
             const string connectionString = @"Data Source=(LocalDb)\MSSQLLocalDB;database=IdentityServer4.EntityFramework;trusted_connection=yes;";
-            
+
             services.AddMvc();
 
             var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
@@ -48,29 +46,11 @@ namespace Host
             return services.BuildServiceProvider(validateScopes: true);
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory)
+        public void Configure(IApplicationBuilder app)
         {
-            // serilog filter
-            Func<LogEvent, bool> serilogFilter = (e) =>
-            {
-                var context = e.Properties["SourceContext"].ToString();
+            app.UseDeveloperExceptionPage();
 
-                return (context.StartsWith("\"IdentityServer") ||
-                        context.StartsWith("\"IdentityModel") ||
-                        e.Level == LogEventLevel.Error ||
-                        e.Level == LogEventLevel.Fatal);
-            };
 
-            var serilog = new LoggerConfiguration()
-                .MinimumLevel.Verbose()
-                .Enrich.FromLogContext()
-                .Filter.ByIncludingOnly(serilogFilter)
-                .WriteTo.LiterateConsole(outputTemplate: "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message}{NewLine}{Exception}{NewLine}")
-                .WriteTo.File(@"c:\logs\IdentityServer4.EntityFramework.Host.txt")
-                .CreateLogger();
-
-            loggerFactory.AddSerilog(serilog);
-            
             // Setup Databases
             using (var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope())
             {
@@ -80,8 +60,7 @@ namespace Host
             }
 
             app.UseIdentityServer();
-            app.UseIdentityServerEfTokenCleanup(applicationLifetime);
-            
+
             app.UseStaticFiles();
             app.UseMvcWithDefaultRoute();
         }
